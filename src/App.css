@@ -1,0 +1,5 @@
+@import "tailwindcss";
+:root {
+  --primary-gradient: linear-gradient(90deg, rgb(1, 0, 104) 0%, rgb(1, 0, 172) 100%);
+  --secoundary-gradient:linear-gradient(90deg, rgb(1, 0, 172) 0%, rgb(1, 0, 104)  100%);
+}
