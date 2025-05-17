@@ -16,6 +16,23 @@ import ViewAttendancePage from '../Page/AttendancePage/ViewAttendancePage';
 import DetailsAttendancePage from '../Page/AttendancePage/DetailsAttendancePage';
 import UserTypeModulesPage from '../Page/UserTypeModulesPage/UserTypeModulesPage';
 import EditUserTypePage from '../Page/UserTypeModulesPage/EditUserTypePage';
+import ReportPage from '../Page/ReportPage.jsx/ReportPage';
+import ScheduleCreatePage from '../Page/SchedulePage/ScheduleCreatePage';
+import ScheduleViewPage from '../Page/SchedulePage/ScheduleViewPage';
+import OnlineClass from '../Page/Onlineclass/OnlineClass';
+import OnlineViewPage from '../Page/Onlineclass/OnlineViewPage';
+import QuestionCreatePage from '../Page/QuestionCreatepage/QuestionCreatePage';
+import CreateQuestionButtonPage from '../Page/QuestionCreatepage/CreateQuestionButtonPage';
+import MainQuestionCreatePage from '../Page/QuestionCreatepage/MainQuestionCreatePage';
+import ViewQuestionPage from '../Page/QuestionCreatepage/ViewQuestionPage';
+import AssignmentListPage from '../Page/AssignmentPage/AssignmentListPage';
+import SharedModelPage from '../Page/AssignmentPage/SharedModelPage';
+import CreateAssignmentPage from '../Page/AssignmentPage/CreateAssignmentPage';
+import CreateAssignmentQuestionLisrt from '../Page/AssignmentPage/CreateAssignmentQuestionLisrt';
+import CreateAssignmentQuestionEdit from '../Page/AssignmentPage/CreateAssignmentQuestionEdit';
+import SubQuestionEditPage from '../Page/AssignmentPage/SubQuestionEditPage';
+import SubChildQuestionPage from '../Page/AssignmentPage/SubChildQuestionPage';
+
 
 
 const Routing = () => {
@@ -36,7 +53,24 @@ const Routing = () => {
         <Route path="/attendance-view" element={<ViewAttendancePage/>} /> 
         <Route path="/student-details/:id" element={<DetailsAttendancePage/>} /> 
         <Route path="/user-type" element={<UserTypeModulesPage/>} />
-        <Route path="/user-type-edit/:id" element={<EditUserTypePage/>} />
+        <Route path="/user-type-edit/:id" element={<EditUserTypePage/>} /> 
+        <Route path="/Report-for-admin" element={<ReportPage/>} />
+        <Route path="/schedule-submit" element={<ScheduleCreatePage/>} />
+        <Route path="/schedule-view" element={<ScheduleViewPage/>} />  
+        <Route path="/schedule-Online-classes" element={<OnlineClass/>} /> 
+        <Route path="/online-classes-view" element={<OnlineViewPage/>} />
+        <Route path="/create-question" element={<QuestionCreatePage/>} /> 
+        <Route path="/create-question/:id/:id" element={<CreateQuestionButtonPage/>} />   
+        <Route path="/mainquestion/:id" element={<MainQuestionCreatePage/>} />
+        <Route path="/questions-view/:id" element={<ViewQuestionPage/>} />
+        <Route path="/view-Assignment" element={<AssignmentListPage/>} />
+        <Route path="/create-Assignment" element={<CreateAssignmentPage/>} />
+        <Route path="/create-Assignment/:id" element={<CreateAssignmentQuestionLisrt/>} />
+        <Route path="/main-question-edit/:id" element={<CreateAssignmentQuestionEdit/>} />
+        <Route path="/sub-question-edit/:id" element={<SubQuestionEditPage/>} />
+        <Route path="/subchild-question-edit/:id" element={<SubChildQuestionPage/>} />
+       
+           
       </Routes>
     </Suspense>
   );

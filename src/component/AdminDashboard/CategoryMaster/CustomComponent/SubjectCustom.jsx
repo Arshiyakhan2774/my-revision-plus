@@ -18,7 +18,7 @@ const SubjectCustom = ({ selectedBoard, selectedSubject, setSelectedSubject, get
                 id="subject_id"
                 value={selectedSubject}
                 onChange={(e) => setSelectedSubject(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 disabled={!selectedBoard}
             >
                 <option value="">Select {getInputLabel("Subject").toLowerCase()}</option>

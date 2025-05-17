@@ -2,7 +2,7 @@
 
 const IconWithTitle = ({ icon: Icon, title, iconColor, backgroundColor, iconSize, titleColor, titleFontSize }) => {
   return (
-    <div className='flex justify-center mb-4 mt-10'>
+    <div className='flex justify-center mb-4'>
       <Icon
         color={iconColor}
         style={{

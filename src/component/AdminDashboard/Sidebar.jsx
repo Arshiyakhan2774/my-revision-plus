@@ -16,8 +16,9 @@ import { SiBasicattentiontoken, SiAnytype, SiPastebin } from 'react-icons/si';
 import { LuFileType2 } from 'react-icons/lu';
 import { FaShareSquare } from "react-icons/fa";
 import LogoComponent from './Sidebar/LogoComponent';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { logoutUser } from '../Services/Authentication/AuthSlice';
+import UserProfileModal from './Usermangae/usersList/ProfileDailoge';
 const Sidebar = ({ toggleSidebar1}) => {
 const [isOpen, setIsOpen] = useState(true);
 const [activeMenuId, setActiveMenuId] = useState(null);
@@ -57,6 +58,14 @@ useEffect(() => {
   };
   findActiveMenu();
 }, [location]);
+const [openDialog, setOpenDialog] = useState(false);
+const userResponse = useSelector(state => state.idSlice.userResponse);
+
+const handleOpenDialog = () => setOpenDialog(true);
+const handleCloseDialog = () => setOpenDialog(false);
+
+const defaultName = userResponse?.name || 'User Name';
+const defaultEmail = userResponse?.email || 'user@company.com';
   const menuItems = [
     {
       id: "0a",
@@ -168,10 +177,11 @@ useEffect(() => {
       console.log("Logout error:", error);
     }
   };
-  
+  const avatarUrl = userResponse?.image
+  ? `https://myrevisionplus.com/api/img/users/${userResponse.image}`
+  : null;
   return (
     <div className={`flex flex-col h-full bg-gray-100 text-gray-800  ${isOpen ? 'w-64' : 'w-20'} transition-all duration-300 ease-in-out`}>
-     
       <div className="p-4 border-b border-gray-200 ">
         <div className="flex items-center justify-between">
           {isOpen ? (
@@ -199,18 +209,30 @@ useEffect(() => {
       </div>
       
       {/* User Info */}
-      <div className="p-4 ">
-        <div className="flex items-center">
-          <div className="h-10 w-10 rounded-full bg-[#e8f0fe] flex items-center justify-center text-[#1a73e8] font-bold">
-            UN
-          </div>
-          {isOpen && (
-            <div className="ml-3">
-              <p className="text-sm font-medium">User Name</p>
-              <p className="text-xs text-gray-500">user@company.com</p>
+      <div className="p-4">
+      <div className="flex items-center cursor-pointer" >
+        <div className="h-10 w-10 rounded-full bg-[#e8f0fe] flex items-center justify-center text-[#1a73e8] font-bold">
+        {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={userResponse?.name}
+              className="h-10 w-10 rounded-full object-cover"
+              onClick={handleOpenDialog}
+            />
+          ) : (
+            <div className="h-10 w-10 rounded-full bg-[#e8f0fe] flex items-center justify-center text-[#1a73e8] font-bold">
+              {userResponse?.name?.[0]?.toUpperCase() || 'U'}
             </div>
           )}
         </div>
+        {isOpen && (
+          <div className="ml-3">
+            <p className="text-sm font-medium">{defaultName}</p>
+            <p className="text-xs text-gray-500">{defaultEmail}</p>
+          </div>
+        )}
+      </div>
+      <UserProfileModal openDialog={openDialog} handleCloseDialog={handleCloseDialog} isOpen={isOpen}/>
       </div>
 
       {/* Sidebar Menu with Submenus */}

@@ -16,6 +16,7 @@ export default {
           'custom-primary': '#e8f0fe', 
            secondary: "rgb(1, 0, 104)", 
       },
+      
     },
   },
   plugins: [],

@@ -242,9 +242,9 @@ const ViewAttendance = () => {
                 icon={AiOutlineFundView}
                 title="Attendance List"
                 iconColor="white"
-                backgroundColor="#00246B"
+                backgroundColor="#1a73e8"
                 iconSize="30px"
-                titleColor="#00246B"
+                titleColor="#1a73e8"
                 titleFontSize="34px"
               />
               

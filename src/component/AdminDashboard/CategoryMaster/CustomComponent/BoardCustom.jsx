@@ -16,7 +16,7 @@ const BoardCustom = ({ selectedBoard, setSelectedBoard }) => {
         id="board_id"
         value={selectedBoard}
         onChange={(e) => setSelectedBoard(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white"
+        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
       >
         <option value="">Select a board</option>
         {categories?.categories?.map((board) => (

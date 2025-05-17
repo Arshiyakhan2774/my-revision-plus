@@ -1,0 +1,13 @@
+import React from 'react'
+import NavbarTeacher from '../TeacherNavbar/NavbarTeacher'
+import TeacherDashboard from '../MainTecherDashboarad/TecherDashboarad'
+
+const TeacherDashboardPage = () => {
+  return (
+    <div className='min-h-screen bg-gray-50 flex flex-col  ml-[-14px] mr-[-10px]'>
+      <NavbarTeacher />
+<TeacherDashboard/></div>
+  )
+}
+
+export default TeacherDashboardPage

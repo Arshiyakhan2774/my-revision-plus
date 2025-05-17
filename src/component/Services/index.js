@@ -3,24 +3,32 @@ import { combineReducers } from 'redux';
 import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage'; // defaults to localStorage for web
 import authReducer from './Authentication/AuthSlice';
-import { setupAuthInterceptors } from './Authentication/AuthSlice';
-import idReducer from "../store/UserSliceId";
+import idReducer from "../store/all-Id-Slice/IdSlice.jsx";
 import { userManageSlice } from './UserMangae/UserMangeSlice';
 import { CategoryApi } from './Category/CategoryApi';
 import { attendanceApi } from './Attendance/AttendanceApi';
 import studentReducer from '../store/Random/StudentSlice.jsx';
 import { userTypeApi } from './userType/UserTypeApi.jsx';
+import { scheduleApi } from './SchedulePage/ScheduleApi.jsx';
+import { OnlineClassesApi } from './OnlineClasses/OnlineClassesApi.jsx';
+import { QuestionCreateApi } from './CreateQuestion/CreateQuestionApi.jsx';
+import { assignmentApi } from './Assignment/AssignmentApi.jsx';
 
 // Configuration for redux-persist
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: ['auth', 'idSlice', 'student'], // only these reducers will be persisted
-  // Optionally blacklist API reducers since they don't need persistence
+  whitelist: ['auth', 'idSlice', 'student'], 
+  
   blacklist: [
     userManageSlice.reducerPath, 
     CategoryApi.reducerPath, 
-    attendanceApi.reducerPath
+    attendanceApi.reducerPath,
+    scheduleApi.reducerPath,
+    userTypeApi.reducerPath,
+    OnlineClassesApi.reducerPath,
+    QuestionCreateApi.reducerPath,
+    assignmentApi.reducerPath,
   ]
 };
 
@@ -32,6 +40,10 @@ const rootReducer = combineReducers({
   [CategoryApi.reducerPath]: CategoryApi.reducer,
   [attendanceApi.reducerPath]: attendanceApi.reducer,
   [userTypeApi.reducerPath]:userTypeApi.reducer,
+  [scheduleApi.reducerPath]:scheduleApi.reducer,
+  [OnlineClassesApi.reducerPath]:OnlineClassesApi.reducer,
+  [QuestionCreateApi.reducerPath]:QuestionCreateApi.reducer,
+  [ assignmentApi.reducerPath]:assignmentApi.reducer,
 });
 
 // Create persisted reducer
@@ -51,14 +63,14 @@ const store = configureStore({
       CategoryApi.middleware,
       attendanceApi.middleware,
       userTypeApi.middleware,
+      scheduleApi.middleware,
+      OnlineClassesApi.middleware,
+      QuestionCreateApi.middleware,
+      assignmentApi.middleware,
     ),
   devTools: process.env.NODE_ENV === 'development',
 });
 
-// Initialize auth interceptors with store
-setupAuthInterceptors(store);
-
-// Create persistor
 export const persistor = persistStore(store);
 
 export default store;

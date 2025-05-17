@@ -1,221 +1,38 @@
 import React, { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
-import { Button, MenuItem, Select, FormControl, InputLabel, Container, Card, CardContent, Tabs, Tab, Box, Grid, TextField } from "@mui/material";
-import LayoutPage from "../../../Utilities/LayoutPage";
-import IconWithTitle from "../../../Utilities/IconsTittle";
 import { AiOutlineFundView } from "react-icons/ai";
 import { FcSearch } from "react-icons/fc";
 import { ImFileExcel } from "react-icons/im";
 import { CSVLink } from "react-csv";
-import { Api } from "../../../Api/Api";
-import Flatpickr from "react-flatpickr";
-import "flatpickr/dist/flatpickr.min.css";
-import { useGetUserTeacherQuery } from "../../../Services/UserMangae/UserMangeSlice";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { useGetUserTeacherQuery } from "../../Services/UserMangae/UserMangeSlice";
 
-const Report = ({ isSidebarClosed }) => {
+import { Api } from "../../Api/Api";
+import IconWithTitle from "../../utilities/IconsTittle";
+
+const Report = () => {
+  // State management
   const [facultyName, setFacultyName] = useState("All");
   const [reportType, setReportType] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [summaryData, setSummaryData] = useState([]);
   const [detailsData, setDetailsData] = useState([]);
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [fromDate, setFromDate] = useState(null);
+  const [toDate, setToDate] = useState(null);
   const [month, setMonth] = useState("");
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(false);
   const [sentEmails, setSentEmails] = useState([]);
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
+
+  // API data
   const { data: teacherData } = useGetUserTeacherQuery();
   const teacherList = teacherData?.data?.teacher || [];
 
-  // Fetch default data for the current year on component mount
-  useEffect(() => {
-    fetchDefaultSummaryData();
-  }, []);
-
-  // Fetch data when filters are applied
-  useEffect(() => {
-    if (facultyName !== "All" || reportType !== "All" || fromDate || toDate || month || year) {
-      if (tabValue === 0) {
-        fetchSummaryData();
-      } else if (tabValue === 1) {
-        fetchDetailsData();
-      }
-    }
-  }, [facultyName, reportType, fromDate, toDate, month, year, tabValue]);
-
-  const fetchDefaultSummaryData = async () => {
-    setLoading(true);
-    try {
-      const currentYear = new Date().getFullYear();
-      const response = await Api.get(`/attendance/list?year=${currentYear}`);
-      console.log("Default Summary API Response:", response.data);
-
-      if (response.data.status === "success") {
-        setSummaryData(response.data.data);
-      }
-    } catch (error) {
-      console.error("Error fetching default summary data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchSummaryData = async () => {
-    setLoading(true);
-    try {
-      let apiUrl = "/attendance/list?";
-
-      // Add teacher_id if selected
-      if (facultyName !== "All") {
-        apiUrl += `teacher_id=${facultyName}&`;
-      }
-
-      // Add filters based on report type
-      if (reportType === "Daily") {
-        apiUrl += `from_date=${fromDate}&to_date=${toDate}`;
-      } else if (reportType === "Monthly") {
-        apiUrl += `month=${month}&year=${year}`;
-      } else if (reportType === "Yearly") {
-        apiUrl += `year=${year}`;
-      }
-
-      console.log("Summary API URL:", apiUrl);
-
-      const response = await Api.get(apiUrl);
-      console.log("Summary API Response:", response.data);
-
-      if (response.data.status === "success") {
-        setSummaryData(response.data.data);
-      } else {
-        console.error("API returned an error:", response.data.message);
-        setSummaryData([]);
-      }
-    } catch (error) {
-      console.error("Error fetching summary data:", error);
-      setSummaryData([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-const fetchDetailsData = async () => {
-  setLoading(true);
-  try {
-    // Prepare request body for POST request
-    const requestBody = {
-      teacher_id: facultyName !== "All" ? facultyName : "",
-      month: reportType === "Monthly" ? month : "",
-      year: year,
-      mail: "no"
-    };
-
-    const response = await Api.post("/attendance/reportdetails", requestBody);
-    console.log("Details API Response:", response.data);
-
-    if (response.data.status === "success") {
-      // Access the filteredAttendance array from the response
-      const filteredAttendance = response.data.data?.filteredAttendance || [];
-      setDetailsData(filteredAttendance);
-    } else {
-      console.error("API returned an error:", response.data.message);
-      setDetailsData([]);
-    }
-  } catch (error) {
-    console.error("Error fetching details data:", error);
-    setDetailsData([]);
-  } finally {
-    setLoading(false);
-  }
-};
-useEffect(() => {
-  if (facultyName !== "All" || reportType !== "All" || fromDate || toDate || month || year) {
-    switch(tabValue) {
-      case 0: 
-        fetchSummaryData();
-        break;
-      case 1:
-        fetchDetailsData();
-        break;
-      case 2:
-        fetchSentEmails();
-        break;
-      default:
-        break;
-    }
-  }
-}, [facultyName, reportType, fromDate, toDate, month, year, tabValue]);
-
-// 2. Add separate fetch function for Sent Emails
-const fetchSentEmails = async () => {
-  setLoading(true);
-  try {
-    const requestBody = {
-      teacher_id: facultyName !== "All" ? facultyName : "",
-      month: reportType === "Monthly" ? month : "",
-      year: year,
-      mail: "yes"
-    };
-
-    const response = await Api.post("/attendance/reportdetails", requestBody);
-    if (response.data.status === "success") {
-      const sentData = response.data.data?.filteredAttendance?.filter(item => item.mail_status === "Yes") || [];
-      setSentEmails(sentData);
-    }
-  } catch (error) {
-    console.error("Error fetching sent emails:", error);
-    setSentEmails([]);
-  } finally {
-    setLoading(false);
-  }
-};
-
-const handleSendMail = async (row) => {
-  try {
-    const requestBody = {
-      teacher_id: row.teacher_details?.id || facultyName,
-      attendance_id: row._id,
-      mail: "yes"
-    };
-
-    const response = await Api.post("/attendance/sendmail", requestBody);
-    if (response.data.status === "success") {
-      fetchSentEmails();
-    }
-  } catch (error) {
-    console.error("Error sending email:", error);
-  }
-};
-
-  const handleReportTypeChange = (value) => {
-    setReportType(value);
-    if (value === "Daily") {
-      setShowDatePicker(true);
-    } else {
-      setShowDatePicker(false);
-    }
-  };
-
-  const handleFacultyChange = (e) => {
-    setFacultyName(e.target.value);
-    setFromDate("");
-    setToDate("");
-    setMonth("");
-    setYear(new Date().getFullYear().toString());
-  };
-
-  const handleYearChange = (e) => {
-    setYear(e.target.value);
-  };
-
-  const handleMonthChange = (e) => {
-    setMonth(e.target.value);
-  };
-
-
- 
-  
+  // Constants
   const reportTypes = ["All", "Daily", "Monthly", "Yearly"];
   const months = [
     { value: 1, label: "January" },
@@ -233,173 +50,192 @@ const handleSendMail = async (row) => {
   ];
   const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i);
 
-  const summaryColumns = [
-    { name: "Faculty Name", selector: (row) => row.teacher?.name || "N/A", sortable: true, filterable: true },
-    { name: "Student Name", selector: (row) => row.student?.name || "N/A", sortable: true, filterable: true },
-    { name: "Board/Program", selector: (row) => row.board?.board_prog_name || "N/A", sortable: true, filterable: true },
-    { name: "Subject / Grade", selector: (row) => row.subject?.subject_name || "N/A", sortable: true, filterable: true },
-   
-    { name: "Subject / Subject Level", selector: (row) => row.subjectlevel?.subject_level_name || "N/A", sortable: true, filterable: true },
-    { name: "Location", selector: (row) => row.location || "N/A", sortable: true, filterable: true },
-    { name: "Date", selector: (row) => new Date(row.attendance_date).toLocaleDateString('en-GB', {
-      day: '2-digit',
-    month: 'long',
-     year: 'numeric',
-    }), sortable: true, filterable: true },
-    { name: "Total Hours", selector: (row) => row.total_hours || "N/A", sortable: true, filterable: true },
-    { name: "Topic", selector: (row) => row.topic || "N/A", sortable: true, filterable: true },
-    { name: "Assignment", selector: (row) => row.assignment_description || "N/A", sortable: true, filterable: true },
-  ];
+  // Data fetching
+  useEffect(() => {
+    fetchDefaultSummaryData();
+  }, []);
 
-  const detailsColumns = [
-    { 
-      name: "Teacher Name", 
-      selector: (row) => row.teacher_details?.name || "N/A", 
-      sortable: true 
-    },
-    { 
-      name: "Student Name", 
-      selector: (row) => row.student_details?.name || "N/A", 
-      sortable: true 
-    },
-    { 
-      name: "Board/Program", 
-      selector: (row) => row.board_details?.board_prog_name || "N/A", 
-      sortable: true 
-    },
-    { 
-      name: "Subject", 
-      selector: (row) => row.subject_details?.subject_name || "N/A", 
-      sortable: true 
-    },
-    { 
-      name: "Date", 
-      selector: (row) => new Date(row.attendance_date).toLocaleDateString('en-GB', {
-        day: '2-digit',
-      month: 'long',
-       year: 'numeric',
-      }), 
-      sortable: true 
-    },
-    { 
-      name: "Start Time", 
-      selector: (row) => row.start_time || "N/A", 
-      sortable: true 
-    },
-    { 
-      name: "End Time", 
-      selector: (row) => row.end_time || "N/A", 
-      sortable: true 
-    },
-    { 
-      name: "Total Hours", 
-      selector: (row) => row.total_hours || "N/A", 
-      sortable: true 
-    },
-    { 
-      name: "Topic", 
-      selector: (row) => row.topic || "N/A", 
-      sortable: true 
-    },
-    { 
-      name: "Assignment Provided", 
-      selector: (row) => row.assignment_provide || "N/A", 
-      sortable: true 
-    },
-    { 
-      name: "Location", 
-      selector: (row) => row.location || "N/A", 
-      sortable: true 
-    },
-    { 
-      name: "Center", 
-      selector: (row) => row.schedule_details?.center || "N/A", 
-      sortable: true 
+  useEffect(() => {
+    if (facultyName !== "All" || reportType !== "All" || fromDate || toDate || month || year) {
+      switch(tabValue) {
+        case 0: fetchSummaryData(); break;
+        case 1: fetchDetailsData(); break;
+        case 2: fetchSentEmails(); break;
+        default: break;
+      }
     }
-  ];
-  
+  }, [facultyName, reportType, fromDate, toDate, month, year, tabValue]);
+
+  // Data processing functions
+  const normalizeSentEmails = (data) => {
+    return data.map(item => ({
+      ...item,
+      mail_status: item.mail_status?.toLowerCase() === "yes" ? "Yes" : "No"
+    }));
+  };
+
+  const filteredSentEmails = sentEmails.filter((row) =>
+    (row.student_details?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (row.teacher_details?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (row.mail_status || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const filteredDetailsData = detailsData.filter((row) =>
     (row.student_details?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (row.teacher_details?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
-  const handleGlobalSearch = (e) => {
-    setSearchQuery(e.target.value);
-  };
-  
+
   const filteredSummaryData = summaryData.filter((row) =>
     row.student?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     row.teacher?.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  
-  
+
   const filteredTeachers = teacherList.filter((teacher) =>
     teacher.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  const sentEmailsColumns = [
-    { 
-      name: "Teacher", 
-      selector: (row) => row.teacher_details?.name || "N/A", 
-      sortable: true 
-    },
-    { 
-      name: "Student", 
-      selector: (row) => row.student_details?.name || "N/A", 
-      sortable: true 
-    },
-    { 
-      name: "Date", 
-      selector: (row) => new Date(row.attendance_date).toLocaleDateString('en-GB', {
-        day: '2-digit',
-      month: 'long',
-       year: 'numeric',
-      }), 
-      sortable: true 
-    },
-    { 
-      name: "Mail Status", 
-      selector: (row) => row.mail_status || "N/A", 
-      sortable: true,
-      cell: (row) => (
-        <span style={{ 
-          color: row.mail_status === "Yes" ? "green" : "red",
-          fontWeight: "bold"
-        }}>
-          {row.mail_status || "N/A"}
-        </span>
-      )
-    },
-    {
-      name: "Actions",
-      cell: (row) => (
-        <Button
-          variant="contained"
-          size="small"
-          onClick={() => {
-            if (window.confirm("Are you sure you want to resend this email?")) {
-              handleSendMail(row);
-            }
-          }}
-        >
-          Resend
-        </Button>
-      ),
-      ignoreRowClick: true,
-      allowOverflow: true,
-      button: true,
+
+  // API call functions
+  const fetchDefaultSummaryData = async () => {
+    setLoading(true);
+    try {
+      const currentYear = new Date().getFullYear();
+      const response = await Api.get(`/attendance/list?year=${currentYear}`);
+      if (response.data.status === "success") {
+        setSummaryData(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching default summary data:", error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const fetchSummaryData = async () => {
+    setLoading(true);
+    try {
+      let apiUrl = "/attendance/list?";
+      if (facultyName !== "All") apiUrl += `teacher_id=${facultyName}&`;
+      
+      if (reportType === "Daily") {
+        const from = fromDate ? fromDate.toISOString().split('T')[0] : '';
+        const to = toDate ? toDate.toISOString().split('T')[0] : '';
+        apiUrl += `from_date=${from}&to_date=${to}`;
+      } else if (reportType === "Monthly") {
+        const formattedMonth = month.toString().padStart(2, '0');
+        apiUrl += `month=${formattedMonth}&year=${year}`;
+      } else if (reportType === "Yearly") {
+        apiUrl += `year=${year}`;
+      }
+
+      const response = await Api.get(apiUrl);
+      setSummaryData(response.data.status === "success" ? response.data.data : []);
+    } catch (error) {
+      console.error("Error fetching summary data:", error);
+      setSummaryData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDetailsData = async () => {
+    setLoading(true);
+    try {
+      const requestBody = {
+        teacher_id: facultyName !== "All" ? facultyName : "",
+        month: reportType === "Monthly" ? month.toString().padStart(2, '0') : "",
+        year: year,
+        mail: "no"
+      };
+      const response = await Api.post("/attendance/reportdetails", requestBody);
+      setDetailsData(response.data.status === "success" ? 
+        response.data.data?.filteredAttendance || [] : []);
+    } catch (error) {
+      console.error("Error fetching details data:", error);
+      setDetailsData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSentEmails = async () => {
+    setLoading(true);
+    try {
+      const requestBody = {
+        teacher_id: facultyName !== "All" ? facultyName : "",
+        month: reportType === "Monthly" ? month : "",
+        year: year,
+        mail: "yes"
+      };
+      const response = await Api.post("/attendance/reportdetails", requestBody);
+      if (response.data.status === "success") {
+        const sentData = response.data.data?.filteredAttendance?.filter(item => 
+          item.mail_status?.toLowerCase() === "yes"
+        ) || [];
+        setSentEmails(normalizeSentEmails(sentData));
+      }
+    } catch (error) {
+      console.error("Error fetching sent emails:", error);
+      setSentEmails([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendMail = async (row) => {
+    try {
+      const requestBody = {
+        teacher_id: row.teacher_details?.id || facultyName,
+        attendance_id: row._id,
+        mail: "yes"
+      };
+      const response = await Api.post("/attendance/sendmail", requestBody);
+      if (response.data.status === "success") {
+        fetchSentEmails();
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
+    }
+  };
+
+  // Handler functions
+  const handleGlobalSearch = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleReportTypeChange = (value) => {
+    setReportType(value);
+  };
+
+  const handleFacultyChange = (e) => {
+    setFacultyName(e.target.value);
+    setFromDate(null);
+    setToDate(null);
+    setMonth("");
+    setYear(new Date().getFullYear().toString());
+  };
+
+  const handleYearChange = (e) => {
+    setYear(e.target.value);
+  };
+
+  const handleMonthChange = (e) => {
+    setMonth(e.target.value);
+  };
+
   const handleReset = () => {
     setFacultyName("All");
     setReportType("All");
     setSearchQuery("");
-    setFromDate("");
-    setToDate("");
+    setFromDate(null);
+    setToDate(null);
     setMonth("");
     setYear(new Date().getFullYear().toString());
     setSummaryData([]);
     setDetailsData([]);
     fetchDefaultSummaryData();
   };
+
+  // CSV data preparation
   const csvData = summaryData.map(item => ({
     "Faculty Name": item.teacher?.name || "N/A",
     "Student Name": item.student?.name || "N/A",
@@ -412,314 +248,420 @@ const handleSendMail = async (row) => {
     "Topic": item.topic || "N/A",
     "Assignment": item.assignment_description || "N/A"
   }));
-  
+
+  // Table columns configuration
+  const summaryColumns = [
+    { name: "Faculty Name", selector: row => row.teacher?.name || "N/A", sortable: true },
+    { name: "Student Name", selector: row => row.student?.name || "N/A", sortable: true },
+    { name: "Board/Program", selector: row => row.board?.board_prog_name || "N/A", sortable: true },
+    { name: "Subject / Grade", selector: row => row.subject?.subject_name || "N/A", sortable: true },
+    { name: "Subject Level", selector: row => row.subjectlevel?.subject_level_name || "N/A", sortable: true },
+    { name: "Location", selector: row => row.location || "N/A", sortable: true },
+    { 
+      name: "Date", 
+      selector: row => new Date(row.attendance_date).toLocaleDateString('en-GB', {
+        day: '2-digit', month: 'long', year: 'numeric'
+      }), 
+      sortable: true 
+    },
+    { name: "Total Hours", selector: row => row.total_hours || "N/A", sortable: true },
+    { name: "Topic", selector: row => row.topic || "N/A", sortable: true },
+    { name: "Assignment", selector: row => row.assignment_description || "N/A", sortable: true },
+  ];
+
+  const detailsColumns = [
+    { name: "Teacher", selector: row => row.teacher_details?.name || "N/A", sortable: true },
+    { name: "Student", selector: row => row.student_details?.name || "N/A", sortable: true },
+    { name: "Board/Program", selector: row => row.board_details?.board_prog_name || "N/A", sortable: true },
+    { name: "Subject", selector: row => row.subject_details?.subject_name || "N/A", sortable: true },
+    { 
+      name: "Date", 
+      selector: row => new Date(row.attendance_date).toLocaleDateString('en-GB', {
+        day: '2-digit', month: 'long', year: 'numeric'
+      }), 
+      sortable: true 
+    },
+    { name: "Start Time", selector: row => row.start_time || "N/A", sortable: true },
+    { name: "End Time", selector: row => row.end_time || "N/A", sortable: true },
+    { name: "Total Hours", selector: row => row.total_hours || "N/A", sortable: true },
+    { name: "Topic", selector: row => row.topic || "N/A", sortable: true },
+    { name: "Assignment", selector: row => row.assignment_provide || "N/A", sortable: true },
+    { name: "Location", selector: row => row.location || "N/A", sortable: true },
+    { name: "Center", selector: row => row.schedule_details?.center || "N/A", sortable: true }
+  ];
+
+  const sentEmailsColumns = [
+    { name: "Teacher", selector: row => row.teacher_details?.name || "N/A", sortable: true },
+    { name: "Student", selector: row => row.student_details?.name || "N/A", sortable: true },
+    { 
+      name: "Date", 
+      selector: row => new Date(row.attendance_date).toLocaleDateString('en-GB', {
+        day: '2-digit', month: 'long', year: 'numeric'
+      }), 
+      sortable: true 
+    },
+    { 
+      name: "Mail Status", 
+      selector: row => row.mail_status || "N/A", 
+      sortable: true,
+      cell: row => (
+        <span className={row.mail_status?.toLowerCase() === "yes" ? 
+          "text-green-500 font-bold" : "text-red-500 font-bold"}>
+          {row.mail_status || "N/A"}
+        </span>
+      )
+    },
+    {
+      name: "Actions",
+      cell: row => (
+        <button
+        onClick={() => {
+          setSelectedRow(row);
+          setIsModalOpen(true);
+        }}
+       
+          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Resend
+        </button>
+      ),
+      ignoreRowClick: true,
+      allowOverflow: true,
+      button: true,
+    }
+  ];
+
+  // Table styles
+  const customStyles = {
+    headCells: {
+      style: {
+        backgroundColor: '#1a73e8',
+        color: "#fff",
+        fontWeight: "bold",
+      },
+    },
+    table: {
+      style: {
+        width: '100%',
+      },
+    },
+  };
+
   return (
-    <LayoutPage isSidebarClosed={isSidebarClosed}>
-      <Container maxWidth="xxl">
-        <Card>
-          <CardContent>
-            <IconWithTitle
-              icon={AiOutlineFundView}
-              title="Report View"
-              iconColor="white"
-              backgroundColor="#00246B"
-              iconSize="30px"
-              titleColor="#00246B"
-              titleFontSize="34px"
-            />
+    <div className="overflow-hidden p-6">
+      <IconWithTitle
+        icon={AiOutlineFundView}
+        title="Report View"
+        iconColor="white"
+        backgroundColor="#1a73e8"
+        iconSize="30px"
+        titleColor="#1a73e8"
+        titleFontSize="34px"
+      />
 
-            <div style={{ marginBottom: "20px" }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={4} md={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Faculty</InputLabel>
-                    <Select
-                      value={facultyName}
-                      onChange={handleFacultyChange}
-                      label="Faculty"
-                      sx={{ height: "56px" }}
-                    >
-                      {filteredTeachers.map((teacher) => (
-                        <MenuItem key={teacher._id} value={teacher._id}>
-                          {teacher.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={4} md={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Report Type</InputLabel>
-                    <Select
-                      value={reportType}
-                      onChange={(e) => handleReportTypeChange(e.target.value)}
-                      label="Report Type"
-                      sx={{ height: "56px" }}
-                    >
-                      {reportTypes.map((type, index) => (
-                        <MenuItem key={index} value={type}>
-                          {type}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-              </Grid>
-              {reportType === "Yearly" && (
-                <Box mt={4}>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={4} md={6}>
-                      <FormControl fullWidth>
-                        <InputLabel>Year</InputLabel>
-                        <Select
-                          value={year}
-                          onChange={handleYearChange}
-                          label="Year"
-                          sx={{ height: "56px" }}
-                        >
-                          {years.map((year) => (
-                            <MenuItem key={year} value={year}>
-                              {year}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Grid>
-                  </Grid>
-                </Box>
-              )}
-              {reportType === "Monthly" && (
-                <Box mt={4}>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={4} md={6}>
-                      <FormControl fullWidth>
-                        <InputLabel>Month</InputLabel>
-                        <Select
-                          value={month}
-                          onChange={handleMonthChange}
-                          label="Month"
-                          sx={{ height: "56px" }}
-                        >
-                          {months.map((month) => (
-                            <MenuItem key={month.value} value={month.value}>
-                              {month.label}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={4}>
-                      <FormControl fullWidth>
-                        <InputLabel>Year</InputLabel>
-                        <Select
-                          value={year}
-                          onChange={handleYearChange}
-                          label="Year"
-                          sx={{ height: "56px" }}
-                        >
-                          {years.map((year) => (
-                            <MenuItem key={year} value={year}>
-                              {year}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Grid>
-                  </Grid>
-                </Box>
-              )}
+      <div className="mb-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Faculty Select */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Faculty</label>
+            <select
+              value={facultyName}
+              onChange={handleFacultyChange}
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="All">All</option>
+              {filteredTeachers.map((teacher) => (
+                <option key={teacher._id} value={teacher._id}>
+                  {teacher.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-              {/* Daily Calendar */}
-              {reportType === "Daily" && (
-                <Box mt={4}>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={4} md={6}>
-                      <Flatpickr
-                        value={fromDate}
-                        options={{ dateFormat: "Y-m-d" }}
-                        onChange={(date) => setFromDate(date[0].toISOString().split("T")[0])}
-                        render={({ defaultValue, ...props }, ref) => (
-                          <TextField
-                            fullWidth
-                            label="From Date"
-                            {...props}
-                            inputRef={ref}
-                            InputProps={{ sx: { height: "56px" } }}
-                          />
-                        )}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={4} md={6}>
-                      <Flatpickr
-                        value={toDate}
-                        options={{ dateFormat: "Y-m-d" }}
-                        onChange={(date) => setToDate(date[0].toISOString().split("T")[0])}
-                        render={({ defaultValue, ...props }, ref) => (
-                          <TextField
-                            fullWidth
-                            label="To Date"
-                            {...props}
-                            inputRef={ref}
-                            InputProps={{ sx: { height: "56px" } }}
-                          />
-                        )}
-                      />
-                    </Grid>
-                  </Grid>
-                </Box>
-              )}
+          {/* Report Type Select */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Report Type</label>
+            <select
+              value={reportType}
+              onChange={(e) => handleReportTypeChange(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            >
+              {reportTypes.map((type) => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+          </div>
+        </div>
 
-              {/* Reset Button */}
-              <Box mt={4}>
-                <Grid container spacing={2} justifyContent="flex-end" alignItems="center">
-                  <Grid item xs={12} sm={4} md={2}>
-                    <Button
-                      variant="contained"
-                      fullWidth
-                      sx={{ backgroundColor: "#00246B", color: "white", height: "56px" }}
-                      onClick={handleReset}
-                    >
-                      Reset
-                    </Button>
-                  </Grid>
-
-                  {/* Export Button */}
-                  <Grid item xs={12} sm={4} md={2}>
-                  <CSVLink 
-  data={csvData} 
-  filename={"report_data.csv"}
-  style={{ textDecoration: "none" }}
->
-
-</CSVLink>
-                  </Grid>
-                </Grid>
-              </Box>
+        {/* Yearly Report Filters */}
+        {reportType === "Yearly" && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+              <select
+                value={year}
+                onChange={handleYearChange}
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              >
+                {years.map((year) => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
             </div>
+          </div>
+        )}
 
-            {/* Tabs */}
-            <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)} sx={{ marginBottom: "10px" }}>
-              <Tab label="Summary" />
-              <Tab label="Details" />
-              <Tab label="Sent Emails" />
-            </Tabs>
+        {/* Monthly Report Filters */}
+        {reportType === "Monthly" && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Month</label>
+              <select
+                value={month}
+                onChange={handleMonthChange}
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              >
+                {months.map((month) => (
+                  <option key={month.value} value={month.value}>{month.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+              <select
+                value={year}
+                onChange={handleYearChange}
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              >
+                {years.map((year) => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
 
-            {/* DataTable */}
-            {tabValue === 0 && (
-              <>
-                <DataTable
-                  columns={summaryColumns}
-                  data={filteredSummaryData}
-                  pagination
-                  customStyles={customStyles}
-                  progressPending={loading}
-                  subHeader
-                  subHeaderComponent={
-                    <Grid item xs={12} sm={6} md={4} sx={{ width: "300px" }}> 
-                      <TextField
-                        fullWidth
-                        label="Search (Student Name, Teacher Name)"
-                        value={searchQuery}
-                        onChange={handleGlobalSearch}
-                        InputProps={{
-                          startAdornment: <FcSearch style={{ marginRight: "8px" }} />,
-                        }}
-                      />
-                    </Grid>
-                  }
-                />
-                {!loading && filteredSummaryData.length === 0 && (
-                  <div style={{ textAlign: "center", padding: "20px" }}>
-                    No data found. Please apply filters.
-                  </div>
-                )}
-              </>
-            )}
+        {/* Daily Report Filters */}
+        {reportType === "Daily" && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+              <DatePicker
+                selected={fromDate}
+                onChange={setFromDate}
+                selectsStart
+                startDate={fromDate}
+                endDate={toDate}
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                placeholderText="Select start date"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+              <DatePicker
+                selected={toDate}
+                onChange={setToDate}
+                selectsEnd
+                startDate={fromDate}
+                endDate={toDate}
+                minDate={fromDate}
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                placeholderText="Select end date"
+              />
+            </div>
+          </div>
+        )}
 
-            {tabValue === 1 && (
-              <>
-                <DataTable
-                  columns={detailsColumns}
-                  data={filteredDetailsData}
-                  pagination
-                  customStyles={customStyles}
-                  progressPending={loading}
-                  subHeader
-                  subHeaderComponent={
-                    <Grid item xs={12} sm={6} md={4} sx={{ width: "300px" }}>
-                      <TextField
-                        fullWidth
-                        label="Search (Student Name, Teacher Name)"
-                        value={searchQuery}
-                        onChange={handleGlobalSearch}
-                        InputProps={{
-                          startAdornment: <FcSearch style={{ marginRight: "8px" }} />,
-                        }}
-                      />
-                    </Grid> 
-                  }
-                />
-                {!loading && filteredDetailsData.length === 0 && (
-                  <div style={{ textAlign: "center", padding: "20px" }}>
-                    No data found. Please apply filters.
-                  </div>
-                )}
-                <Box mt={4} display="flex" justifyContent="flex-end">
-                  <Button
-                    variant="contained"
-                    sx={{ backgroundColor: "#00246B", color: "white" }}
-                    onClick={handleSendMail}
-                  >
-                    Send Mail
-                  </Button>
-                </Box>
-              </>
-            )}
-        {tabValue === 2 && (
-  <>
-    <DataTable
-      columns={sentEmailsColumns}
-      data={sentEmails}
-      pagination
-      customStyles={customStyles}
-      progressPending={loading}
-      subHeader
-      subHeaderComponent={
-        <Grid item xs={12} sm={6} md={4} sx={{ width: "300px" }}>
-          <TextField
-            fullWidth
-            label="Search Sent Emails"
-            value={searchQuery}
-            onChange={handleGlobalSearch}
-            InputProps={{
-              startAdornment: <FcSearch style={{ marginRight: "8px" }} />,
-            }}
-          />
-        </Grid>
-      }
-    />
-    {!loading && sentEmails.length === 0 && (
-      <div style={{ textAlign: "center", padding: "20px" }}>
-        No sent emails found. Please apply filters.
+        {/* Action Buttons */}
+        <div className="mt-4 flex flex-col sm:flex-row justify-end gap-4">
+          <button
+            onClick={handleReset}
+            className="px-4 py-3 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+          >
+            Reset
+          </button>
+          <CSVLink 
+            data={csvData} 
+            filename={"report_data.csv"}
+            className="px-4 py-3 bg-custom-primary text-white rounded-md hover:bg-blue-800 transition-colors flex items-center gap-2 justify-center"
+          >
+            <ImFileExcel className="text-xl" />
+            Export to CSV
+          </CSVLink>
+        </div>
       </div>
-    )}
-  </>
+
+      {/* Tabs */}
+      <div className="flex border-b mb-4">
+        <button
+          onClick={() => setTabValue(0)}
+          className={`px-4 py-2 font-medium ${tabValue === 0 ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          Summary
+        </button>
+        <button
+          onClick={() => setTabValue(1)}
+          className={`px-4 py-2 font-medium ${tabValue === 1 ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          Details
+        </button>
+        <button
+          onClick={() => setTabValue(2)}
+          className={`px-4 py-2 font-medium ${tabValue === 2 ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          Sent Emails
+        </button>
+      </div>
+
+      {/* Loading Spinner */}
+      {loading && (
+        <div className="flex justify-center items-center py-10">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      )}
+
+      {/* Summary Tab */}
+      {!loading && tabValue === 0 && (
+        <div className="space-y-4">
+          <div className="w-full md:w-1/3">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search (Student Name, Teacher Name)"
+                value={searchQuery}
+                onChange={handleGlobalSearch}
+                className="w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <FcSearch className="absolute left-3 top-3 text-xl" />
+            </div>
+          </div>
+          
+          <DataTable
+            columns={summaryColumns}
+            data={filteredSummaryData}
+            pagination
+            customStyles={customStyles}
+          />
+        
+          {filteredSummaryData.length === 0 && (
+            <div className="text-center py-10 text-gray-500">
+              No data found. Please apply filters.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Details Tab */}
+      {!loading && tabValue === 1 && (
+        <div className="space-y-4">
+          <div className="w-full md:w-1/3">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search (Student Name, Teacher Name)"
+                value={searchQuery}
+                onChange={handleGlobalSearch}
+                className="w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <FcSearch className="absolute left-3 top-3 text-xl" />
+            </div>
+          </div>
+      
+          <DataTable
+            columns={detailsColumns}
+            data={filteredDetailsData}
+            pagination
+            customStyles={customStyles}
+          />
+       
+          {filteredDetailsData.length === 0 && (
+            <div className="text-center py-10 text-gray-500">
+              No data found. Please apply filters.
+            </div>
+          )}
+          <div className="flex justify-end">
+            <button
+              onClick={() => handleSendMail()}
+              className="px-4 py-2 bg-custom-primary text-white rounded-md hover:bg-blue-800 transition-colors"
+            >
+              Send Mail
+            </button>
+          </div>
+        </div>
+      )}
+{!loading && tabValue === 2 && (
+  <div className="space-y-4 w-full">
+    <div className="w-full md:w-1/3">
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Search Sent Emails"
+          value={searchQuery}
+          onChange={handleGlobalSearch}
+          className="w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <FcSearch className="absolute left-3 top-3 text-xl" />
+      </div>
+    </div>
+
+    <div className="w-full overflow-x-auto">
+      {filteredSentEmails.length > 0 ? (
+        <DataTable
+          columns={sentEmailsColumns}
+          data={filteredSentEmails}
+          pagination
+          customStyles={{
+            ...customStyles,
+            table: {
+              style: {
+                minWidth: '100%', // Ensures table takes full width
+                tableLayout: 'auto' // Allows columns to expand naturally
+              }
+            },
+            cells: {
+              style: {
+                whiteSpace: 'nowrap', // Prevents text wrapping
+                overflow: 'visible', // Shows full content
+                textOverflow: 'ellipsis' // Adds ellipsis if needed
+              }
+            }
+          }}
+        />
+      ) : (
+        <div className="text-center py-10 text-gray-500">
+          {loading ? 'Loading...' : 'No sent emails found'}
+        </div>
+      )}
+    </div>
+  </div>
 )}
-          </CardContent>
-        </Card>
-      </Container>
-    </LayoutPage>
+      {isModalOpen && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-lg max-w-md w-full">
+      <h3 className="text-lg font-medium mb-4">Confirm Resend</h3>
+      <p className="mb-6">Are you sure you want to resend this email to {selectedRow?.student_details?.name || 'the student'}?</p>
+      <div className="flex justify-end space-x-3">
+        <button
+          onClick={() => setIsModalOpen(false)}
+          className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => {
+            handleSendMail(selectedRow);
+            setIsModalOpen(false);
+          }}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          Resend
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+    </div>
   );
 };
 
-const customStyles = {
-  headCells: {
-    style: {
-      backgroundColor: "#00246B",
-      color: "#fff",
-      fontWeight: "bold",
-    },
-  },
-};
-
-export default Report;
+export default Report;   
